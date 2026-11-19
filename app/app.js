@@ -21,6 +21,37 @@ earned = new Set([...earned].filter((id) => byId.has(id)));
 let kind = 'all';
 let openId = null;
 
+// Deep-link: filter/search state lives in the URL so a filtered view can be shared.
+function readUrl() {
+  const p = new URLSearchParams(location.search);
+  const q = p.get('q');
+  if (q) searchEl.value = q;
+  const g = p.get('grade');
+  if (g && ['all', 'platinum', 'gold', 'silver', 'bronze'].includes(g)) gradeEl.value = g;
+  const k = p.get('kind');
+  if (k && ['all', 'story', 'missable', 'collectibles', 'activities', 'online'].includes(k)) kind = k;
+  if (p.get('spoilers') === '0') spoilersEl.checked = false;
+  if (p.get('hideEarned') === '1') hideEarnedEl.checked = true;
+}
+function syncUrl() {
+  const p = new URLSearchParams();
+  if (searchEl.value.trim()) p.set('q', searchEl.value.trim());
+  if (gradeEl.value !== 'all') p.set('grade', gradeEl.value);
+  if (kind !== 'all') p.set('kind', kind);
+  if (!spoilersEl.checked) p.set('spoilers', '0');
+  if (hideEarnedEl.checked) p.set('hideEarned', '1');
+  const qs = p.toString();
+  history.replaceState(null, '', qs ? `?${qs}` : location.pathname);
+}
+function syncPills() {
+  document.querySelectorAll('#kindPills .pill').forEach((x) => {
+    const on = x.dataset.kind === kind;
+    x.classList.toggle('active', on);
+    x.setAttribute('aria-pressed', String(on));
+  });
+}
+readUrl();
+
 function save() {
   localStorage.setItem(KEY, JSON.stringify([...earned]));
 }
@@ -81,7 +112,7 @@ function badge(t) {
   if (t.missable) out.push('<span class="badge missable">⚠ Possibly missable</span>');
   if (t.hidden) out.push('<span class="badge hidden">Hidden on PS5</span>');
   if (t.kind !== 'milestone') out.push(`<span class="badge kind">${t.kind}</span>`);
-  if (t.count != null) out.push(`<span class="badge count">${typeof t.count === 'number' && t.count > 1000 ? '$' + t.count.toLocaleString('en-US') : t.count}</span>`);
+  if (t.count != null) out.push(`<span class="badge count">${typeof t.count === 'number' && t.count > 1000 ? '$' + new Intl.NumberFormat(navigator.language).format(t.count) : t.count}</span>`);
   return out.join('');
 }
 
@@ -94,6 +125,7 @@ function rowEl(t) {
   head.className = 'row-head';
   const box = document.createElement('input');
   box.type = 'checkbox';
+  box.name = 'earned';
   box.checked = earned.has(t.id);
   box.setAttribute('aria-label', `Mark ${hidden ? 'hidden trophy' : t.name} as earned`);
   box.addEventListener('change', () => {
@@ -129,15 +161,30 @@ function rowEl(t) {
   badges.innerHTML = badge(t);
   main.append(title, badges);
   head.append(box, main);
-  head.addEventListener('click', (e) => {
-    if (e.target === box) return;
+  head.setAttribute('role', 'button');
+  head.setAttribute('tabindex', '0');
+  head.setAttribute('aria-expanded', String(openId === t.id));
+  head.setAttribute('aria-controls', `guide-${t.id}`);
+  const toggleGuide = () => {
     openId = openId === t.id ? null : t.id;
     render();
+  };
+  head.addEventListener('click', (e) => {
+    if (e.target === box) return;
+    toggleGuide();
+  });
+  head.addEventListener('keydown', (e) => {
+    if (e.target !== head) return;
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleGuide();
+    }
   });
   li.append(head);
   if (openId === t.id && !hidden) {
     const guide = document.createElement('div');
     guide.className = 'row-guide';
+    guide.id = `guide-${t.id}`;
     const p = document.createElement('p');
     p.textContent = t.guide;
     const sources = document.createElement('p');
@@ -154,8 +201,16 @@ function rowEl(t) {
 
 function render() {
   renderProgress();
+  syncUrl();
+  // Re-rendering rebuilds the rows, which would drop keyboard focus to <body>.
+  // Remember which row had focus and restore it to the rebuilt head.
+  const focusedId = document.activeElement?.closest?.('.row')?.dataset.id;
   const shown = trophies.filter(matches);
   rowsEl.replaceChildren(...shown.map(rowEl));
+  if (focusedId) {
+    const head = rowsEl.querySelector(`.row[data-id="${focusedId}"] .row-head`);
+    if (head) head.focus();
+  }
   $('emptyState').hidden = shown.length > 0;
   const kindCount = kind === 'online' ? 0 : shown.length;
   $('countLine').textContent =
@@ -168,11 +223,16 @@ function render() {
 document.querySelectorAll('#kindPills .pill').forEach((b) => {
   b.addEventListener('click', () => {
     kind = b.dataset.kind;
-    document.querySelectorAll('#kindPills .pill').forEach((x) => x.classList.toggle('active', x === b));
+    syncPills();
     render();
   });
 });
-searchEl.addEventListener('input', render);
+syncPills();
+let searchTimer = 0;
+searchEl.addEventListener('input', () => {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(render, 150);
+});
 gradeEl.addEventListener('change', render);
 spoilersEl.addEventListener('change', render);
 hideEarnedEl.addEventListener('change', render);
@@ -194,9 +254,12 @@ $('import').addEventListener('change', async (e) => {
     if (!valid.length) throw new Error('no valid trophy ids');
     earned = new Set(valid);
     save();
+    $('importError').hidden = true;
     render();
   } catch {
-    alert('That file is not a trophy-progress export from this guide.');
+    const err = $('importError');
+    err.textContent = 'That file is not a trophy-progress export from this guide. Export your progress first, then import that file.';
+    err.hidden = false;
   }
   e.target.value = '';
 });
