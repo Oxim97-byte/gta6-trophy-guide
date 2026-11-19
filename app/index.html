@@ -3,18 +3,20 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#150826">
 <title>Leonida Trophy Guide — GTA VI · All 55 PS5 Trophies</title>
 <meta name="description" content="Offline guide and tracker for all 55 Grand Theft Auto VI trophies on PlayStation 5: roadmap to the Platinum, missable warnings, filters, spoiler mode and cited guides.">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to trophy list</a>
 <header class="hero">
   <div class="hero-inner">
     <p class="eyebrow">Grand Theft Auto VI · PlayStation 5 · Offline guide</p>
     <h1>Leonida Trophy Guide</h1>
     <p class="lede">All 55 trophies — tracker, roadmap &amp; cited guides. No account, no network, no online trophies. Save your progress in this browser.</p>
-    <div class="progress-wrap" aria-label="Progress to the Platinum">
-      <div class="progress-big"><span id="earnedCount">0</span><span class="of">/ 55 earned</span><span id="earnedPct" class="pct">0%</span></div>
+    <div class="progress-wrap" role="group" aria-label="Progress to the Platinum">
+      <div class="progress-big" aria-live="polite"><span id="earnedCount">0</span><span class="of">/ 55 earned</span><span id="earnedPct" class="pct">0%</span></div>
       <div class="bar" role="progressbar" aria-valuemin="0" aria-valuemax="55" aria-valuenow="0" id="progressBar"><span id="progressFill"></span></div>
       <ul class="grades" id="gradeCounts"></ul>
     </div>
@@ -22,7 +24,7 @@
   <div class="sunset" aria-hidden="true"></div>
 </header>
 
-<main>
+<main id="main" tabindex="-1">
   <section class="alert" id="missableAlert">
     <strong>⚠ 1 possibly missable</strong>
     <span><b>Positive Mental Attitude</b> — do Lucia&rsquo;s balcony meditation at Jason&rsquo;s house in <b>Chapter 1</b> (after <i>Down to Earth</i>). It disappears once Chapter 1 ends, and it may be needed for the trophy. Keep a Chapter 1 save until it pops.</span>
@@ -30,14 +32,14 @@
 
   <section class="roadmap" id="roadmap" aria-label="Roadmap to the Platinum">
     <h2>Roadmap to the Platinum</h2>
-    <p class="section-sub">Six stages, in order. Follow them and nothing is missable — except that one meditation in Chapter 1.</p>
+    <p class="section-sub">6 stages, in order. Follow them and nothing is missable — except that one meditation in Chapter 1.</p>
     <ol class="stages" id="stages"></ol>
   </section>
 
   <section class="controls" aria-label="Filters and progress tools">
     <div class="search-row">
-      <input id="search" type="search" placeholder="Search a trophy, mission or place…" aria-label="Search trophies">
-      <select id="grade" aria-label="Filter by grade">
+      <input id="search" name="q" type="search" placeholder="Search a trophy, mission or place…" aria-label="Search trophies" autocomplete="off">
+      <select id="grade" name="grade" aria-label="Filter by grade">
         <option value="all">All grades</option>
         <option value="platinum">Platinum</option>
         <option value="gold">Gold</option>
@@ -46,22 +48,23 @@
       </select>
     </div>
     <div class="pills" id="kindPills" role="group" aria-label="Filter by kind">
-      <button type="button" data-kind="all" class="pill active">All 55</button>
-      <button type="button" data-kind="story" class="pill">Story</button>
-      <button type="button" data-kind="missable" class="pill">Missable</button>
-      <button type="button" data-kind="collectibles" class="pill">Collectibles</button>
-      <button type="button" data-kind="activities" class="pill">Activities</button>
-      <button type="button" data-kind="online" class="pill">Online</button>
+      <button type="button" data-kind="all" class="pill active" aria-pressed="true">All 55</button>
+      <button type="button" data-kind="story" class="pill" aria-pressed="false">Story</button>
+      <button type="button" data-kind="missable" class="pill" aria-pressed="false">Missable</button>
+      <button type="button" data-kind="collectibles" class="pill" aria-pressed="false">Collectibles</button>
+      <button type="button" data-kind="activities" class="pill" aria-pressed="false">Activities</button>
+      <button type="button" data-kind="online" class="pill" aria-pressed="false">Online</button>
     </div>
     <div class="toggles">
-      <label class="toggle"><input type="checkbox" id="spoilers" checked> Show story spoilers</label>
-      <label class="toggle"><input type="checkbox" id="hideEarned"> Hide earned</label>
+      <label class="toggle"><input type="checkbox" id="spoilers" name="spoilers" checked> Show story spoilers</label>
+      <label class="toggle"><input type="checkbox" id="hideEarned" name="hideEarned"> Hide earned</label>
       <span class="spacer"></span>
-      <button id="export" type="button">Export progress</button>
+      <button id="export" type="button">Export Progress</button>
       <label class="import">Import progress <input id="import" type="file" accept="application/json"></label>
-      <button id="reset" type="button" class="ghost">Reset</button>
+      <button id="reset" type="button" class="ghost">Reset progress</button>
     </div>
-    <p class="count-line" id="countLine"></p>
+    <p class="import-error" id="importError" role="alert" hidden></p>
+    <p class="count-line" id="countLine" aria-live="polite"></p>
   </section>
 
   <section class="list" aria-label="Trophy list">
